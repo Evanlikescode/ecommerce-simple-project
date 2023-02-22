@@ -1,10 +1,5 @@
 from flask import Flask, render_template, request, session, redirect, url_for
 from flask_mysqldb import MySQL
-# from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
-# from flask_wtf import FlaskForm
-# from wtforms import StringField, PasswordField, SubmitField
-# from wtforms.validators import InputRequired, Length, ValidationError
-# from flask_bcrypt import Bcrypt 
 import os
 application = Flask(__name__, static_folder='/static')
 
@@ -22,42 +17,41 @@ mysql.init_app(application)
 
 @application.route('/register', methods=['POST', 'GET'])
 def register():
-    if session.get('is_login') == False:
+    if session.get('is_login') == False: # menunjukkan bahwa user belum memiliki akses login
 
-        if request.method == "POST":
-            cur = mysql.connection.cursor()
+        if request.method == "POST": # menunjukkan bahwa method HTTP yang digunakan adalah POST / untuk membuat data
+            cur = mysql.connection.cursor() # deklarasi penggunaan method mysql di awal
             req_data = {
                 "username": request.form['username'],
                 "fullname": request.form['fullname'],
                 "email": request.form['email'],
                 "password": request.form['password'],
                 "role": 1
-            }
+            } # deklarasi data2 request dari form html dengan dictionary agar mudah diakses dan diubah
 
             cur.execute('SELECT * FROM tb_user WHERE username = %s OR email = %s OR fullname = %s', 
-            (req_data.get('username'), req_data.get('email'), req_data.get('fullname')))
-            row = cur.fetchone()
-            print(row)
-            if row != None:
+            (req_data.get('username'), req_data.get('email'), req_data.get('fullname'))) # query mysql (select) yang bertujuan untuk mendapatkan data dari database 
+            row = cur.fetchone() # method flask_mysqldb untuk mendapatkan data satuan sesuai id
+            if row != None: # ketika data satuan tidak sama dengan kosong, maka sistem akan return message false dan akan diambil html untuk mengetahui bahwa html harus menampilkan pesan yang menunjukkan bahwa input data akun tersebut sudah tersedia
                 message = "false"
                 return render_template('register/register.html', message=message)
             else:
-                cur.execute('INSERT INTO tb_user (uuid_user, username, fullname, email, passwords, id_role) VALUES (%s,%s,%s,%s,%s,%s)',
+                cur.execute('INSERT INTO tb_user (uuid_user, username, fullname, email, passwords, id_role) VALUES (%s,%s,%s,%s,%s,%s)', # ini merupakan query iNSERT untuk memasukkan data user baru ke database
                 ('abcd1', req_data.get('username'), req_data.get('fullname'), req_data.get('email'), req_data.get('password'), req_data.get('role')))
                 mysql.connection.commit()
-                cur.execute('SELECT * FROM tb_user WHERE email = %s AND fullname = %s', (req_data.get('email'), req_data.get('fullname')))
+                cur.execute('SELECT * FROM tb_user WHERE email = %s AND fullname = %s', (req_data.get('email'), req_data.get('fullname'))) # mendapatkan data yang telah berhasil di input di database
                 rows = cur.fetchone()
                 print(rows)
                 data = {
                     'id': rows[0]
                 }
-                session['is_login'] = True
+                session['is_login'] = True # setup session yang berada di browser sehingga dapat digunakan di halaman lainnya
                 session['id'] = data.get('id')
                 session['username'] = req_data.get('username')
                 session['email'] = req_data.get('email')
                 session['fullname'] = req_data.get('fullname')
                 session['role'] = req_data.get('role')
-                return redirect(url_for('home'))
+                return redirect(url_for('home')) # redirect atau melanjutkan ke halaman berikutnya ketika semua perintah telah terjalani
         return render_template('register/register.html', message="")
     else:
         return redirect(url_for('home'))
@@ -97,7 +91,7 @@ def logout():
     if session.get('is_login') == True:
         if session['is_login'] != False:
             session['is_login'] = False
-            session.pop('username', None)
+            session.pop('username', None) # session.pop merupakan method untuk menghapus session yang kita setup di browser. Hal ini dimulai dengan deklarasi kunSci session yang kita buat sebelumnya
             session.pop('fullname', None)
             session.pop('email', None)
             session.pop('role', None)
@@ -108,8 +102,8 @@ def logout():
 @application.route('/')
 def home():
     cur = mysql.connection.cursor()
-    cur.execute("SELECT * FROM tb_product WHERE id_slot != 0")
-    row = cur.fetchall()
+    cur.execute("SELECT * FROM tb_product WHERE id_slot != 0") # select data dari tb_product yang memiliki ketersediaan barang
+    row = cur.fetchall() # fetchall merupakan method get keseluruhan data yang sesuai dengan apa yang kita minta
     data = []
     for x in row:
         data.append({
@@ -123,14 +117,14 @@ def home():
 
     return render_template('store/store.html', data=data)
 
-@application.route('/cart/<id>')
-def add_to_cart(id):
+@application.route('/cart/<id>') # <id> menunjukkan bahwa halaman ini memerlukan parameter id untuk menjalankan perintah selanjutnya
+def add_to_cart(id): # terdapat parameter id dalam function ini sebagai deklarasi untuk id pada parameter / url browser
     if session.get('is_login') == True:
             
         req_data = {
             "product": id,
             "product_slot": 1,
-            "id_user": session.get('id'), # sementara
+            "id_user": session.get('id'),
             "status": "ongoing"
         }
         cur = mysql.connection.cursor()
@@ -145,7 +139,7 @@ def cancel_cart(id):
     if session.get('is_login') == True:
         req_data = {
             "product": id,
-            "id_user": session.get('id'), # sementara
+            "id_user": session.get('id'),
             "status": "ongoing"
         }
         cur = mysql.connection.cursor()
@@ -187,7 +181,7 @@ def payment_success(id, id_product):
             "cart_id": id,
             "product": id_product,
             "product_slot": 1,
-            "id_user": session.get('id'), # sementara
+            "id_user": session.get('id'),
             "status": "completed"
         }
         cur = mysql.connection.cursor()
