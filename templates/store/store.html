@@ -1,0 +1,29 @@
+{% extends 'baseLayout.html' %}
+
+{% block main %}
+<div class="container">
+    <div class="row row-cols-1 row-cols-md-4 g-4">
+        {% for x in data %}
+        <div class="col">
+          <div class="card h-100">
+            <img src="{{ x.product_image }}" class="card-img-top" style="width: 100%; height: 100%;">
+            <div class="card-body">
+              <h5 class="card-title" name="product_name" value="">{{ x.product_name }}</h5>
+              <p class="card-text">This is a longer card with supporting text below as a natural lead-in to additional content. This content is a little bit longer.</p>
+            
+
+              <a href="{{ url_for('add_to_cart', id=x.id) }}"  class="btn btn-primary">Buy</a> - Rp.{{ x.product_price }}
+
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+        
+        
+      </div>
+      
+</div>
+
+
+
+{% endblock %}

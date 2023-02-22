@@ -1,0 +1,36 @@
+{% extends 'baseLayout.html' %}
+
+{% block main %}
+<div class="container" >
+    <table class="table" style="color: white;">
+        <thead>
+          <tr>
+            <th scope="col">Product name</th>
+            <th scope="col">Product Price</th>
+            <th scope="col">Product Slot</th>
+            <th scope="col">User Slot</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for data in data %}
+          <tr>
+              <td>{{ data.product_name }}</td>
+              <td>{{ data.product_price }}</td>
+              <td>{{ data.product_slot }}</td>
+              <td>{{ data.user_slot }}</td>
+              <td><a href="{{ url_for('payment_success', id=data.id, id_product=data.product_id) }}" class="btn btn-primary">Pay</a> <a href="{{ url_for('cancel_cart', id=data.id) }}" class="btn btn-danger">Cancel</a></td>
+              
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+        
+        
+      </div>
+      
+</div>
+
+
+
+{% endblock %}
