@@ -12,9 +12,9 @@
     <div class="container">
         <br>
         <br>
-        <div class="card" style="height: 500px;">
+        <div class="card" style="height: 600px;">
             <div class="card-header">
-              Login
+              Register
             </div>
             <div class="card-body">
                 <br>
@@ -26,12 +26,20 @@
                       <div id="emailHelp" class="form-text">We'll never share your email with anyone else.</div>
                     </div>
                     <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" name="username" class="form-control"  >
+                      </div>
+                      <div class="mb-3">
+                        <label for="fullname" class="form-label">Fullname</label>
+                        <input type="text" name="fullname" class="form-control"  >
+                      </div>
+                    <div class="mb-3">
                       <label for="password" class="form-label">Password</label>
                       <input type="password" name="password" class="form-control" id="password">
                     </div>
                     <button type="submit" class="btn btn-primary">Submit</button>
                     {% if message != '' %}
-                    <p style="color: red; font-size: 18px;">Please check your username or password again</p>
+                    <p style="color: red; font-size: 18px;">Account is availabled</p>
                     {% endif %}
                 </form>
             </div>

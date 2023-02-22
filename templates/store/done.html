@@ -1,0 +1,34 @@
+{% extends 'baseLayout.html' %}
+
+{% block main %}
+<div class="container" >
+    <table class="table" style="color: white;">
+        <thead>
+          <tr>
+            <th scope="col">Product name</th>
+            <th scope="col">Product Price</th>
+            <th scope="col">Product Slot</th>
+            <th scope="col">User Slot</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for data in data %}
+          <tr>
+              <td>{{ data.product_name }}</td>
+              <td>{{ data.product_price }}</td>
+              <td>{{ data.product_slot }}</td>
+              <td>{{ data.user_slot }}</td>
+              
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+        
+        
+      </div>
+      
+</div>
+
+
+
+{% endblock %}

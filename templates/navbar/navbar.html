@@ -6,9 +6,15 @@
       </button>
       <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
         <div class="navbar-nav">
-          <a class="nav-link" href="{{ url_for('home') }}">Store</a>
           <a class="nav-link" href="{{ url_for('payment') }}">Payment</a>
-          <a class="nav-link" href="#">Login</a>
+          <a class="nav-link" href="{{ url_for('completed_cart') }}">Last Checkout</a>
+          {% if session.get('is_login') == True %}
+          <a class="nav-link" href="{{ url_for('logout') }}">Logout</a>
+          {% else %}
+          <a class="nav-link" href="{{ url_for('login') }}">Login</a>
+          <a class="nav-link" href="{{ url_for('register') }}">Register</a>
+          {% endif %}
+
         </div>
       </div>
     </div>

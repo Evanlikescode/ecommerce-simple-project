@@ -1,10 +1,10 @@
 from flask import Flask, render_template, request, session, redirect, url_for
 from flask_mysqldb import MySQL
-from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
-from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import InputRequired, Length, ValidationError
-from flask_bcrypt import Bcrypt 
+# from flask_login import UserMixin, login_user, LoginManager, login_required, logout_user, current_user
+# from flask_wtf import FlaskForm
+# from wtforms import StringField, PasswordField, SubmitField
+# from wtforms.validators import InputRequired, Length, ValidationError
+# from flask_bcrypt import Bcrypt 
 import os
 application = Flask(__name__, static_folder='/static')
 
@@ -20,11 +20,91 @@ mysql.init_app(application)
 
 
 
-@application.route('/login')
+@application.route('/register', methods=['POST', 'GET'])
+def register():
+    if session.get('is_login') == False:
+
+        if request.method == "POST":
+            cur = mysql.connection.cursor()
+            req_data = {
+                "username": request.form['username'],
+                "fullname": request.form['fullname'],
+                "email": request.form['email'],
+                "password": request.form['password'],
+                "role": 1
+            }
+
+            cur.execute('SELECT * FROM tb_user WHERE username = %s OR email = %s OR fullname = %s', 
+            (req_data.get('username'), req_data.get('email'), req_data.get('fullname')))
+            row = cur.fetchone()
+            print(row)
+            if row != None:
+                message = "false"
+                return render_template('register/register.html', message=message)
+            else:
+                cur.execute('INSERT INTO tb_user (uuid_user, username, fullname, email, passwords, id_role) VALUES (%s,%s,%s,%s,%s,%s)',
+                ('abcd1', req_data.get('username'), req_data.get('fullname'), req_data.get('email'), req_data.get('password'), req_data.get('role')))
+                mysql.connection.commit()
+                cur.execute('SELECT * FROM tb_user WHERE email = %s AND fullname = %s', (req_data.get('email'), req_data.get('fullname')))
+                rows = cur.fetchone()
+                print(rows)
+                data = {
+                    'id': rows[0]
+                }
+                session['is_login'] = True
+                session['id'] = data.get('id')
+                session['username'] = req_data.get('username')
+                session['email'] = req_data.get('email')
+                session['fullname'] = req_data.get('fullname')
+                session['role'] = req_data.get('role')
+                return redirect(url_for('home'))
+        return render_template('register/register.html', message="")
+    else:
+        return redirect(url_for('home'))
+@application.route('/login', methods=['GET','POST'])
 def login():
-    return render_template('login.html')
+    if session.get('is_login') == False:
 
+        if request.method == "POST":
+            cur = mysql.connection.cursor()
+            req_data = {
+                "email": request.form['email'],
+                "password": request.form['password']
+            }
 
+            cur.execute('SELECT * FROM tb_user WHERE email = %s AND passwords = %s', (req_data.get('email'), req_data.get('password')))
+            row = cur.fetchone()
+            if row == None:
+                message = "false"
+                return render_template('login/login.html', message=message)
+            else:
+                session['is_login'] = True
+                session['username'] = row[2]
+                session['fullname'] = row[3]
+                session['email'] = row[4]
+                session['role'] = row[6]
+                session['id'] = row[0]
+                return redirect(url_for('home'))
+            
+                
+                
+        return render_template('login/login.html', message="")
+    else:
+        return redirect(url_for('home'))
+
+@application.route('/logout')
+def logout():
+    if session.get('is_login') == True:
+        if session['is_login'] != False:
+            session['is_login'] = False
+            session.pop('username', None)
+            session.pop('fullname', None)
+            session.pop('email', None)
+            session.pop('role', None)
+            session.pop('id', None)
+        return redirect(url_for('home'))
+    else:
+        return redirect(url_for('login'))
 @application.route('/')
 def home():
     cur = mysql.connection.cursor()
@@ -45,76 +125,108 @@ def home():
 
 @application.route('/cart/<id>')
 def add_to_cart(id):
-    req_data = {
-        "product": id,
-        "product_slot": 1,
-        "id_user": 1, # sementara
-        "status": "ongoing"
-    }
-    cur = mysql.connection.cursor()
-    cur.execute("INSERT INTO tb_cart (id_product, id_slot, id_user, status) VALUES (%s,%s,%s, %s)", (req_data.get('product'), req_data.get('product_slot'), req_data.get('id_user'), req_data.get('status')))
-    mysql.connection.commit()
-    cur.close()
-    return redirect(url_for('payment'))
+    if session.get('is_login') == True:
+            
+        req_data = {
+            "product": id,
+            "product_slot": 1,
+            "id_user": session.get('id'), # sementara
+            "status": "ongoing"
+        }
+        cur = mysql.connection.cursor()
+        cur.execute("INSERT INTO tb_cart (id_product, id_slot, id_user, status) VALUES (%s,%s,%s, %s)", (req_data.get('product'), req_data.get('product_slot'), req_data.get('id_user'), req_data.get('status')))
+        mysql.connection.commit()
+        cur.close()
+        return redirect(url_for('payment'))
+    return redirect(url_for('login'))
 
 @application.route('/delete-cart/<id>')
 def cancel_cart(id):
-    req_data = {
-        "product": id,
-        "id_user": 1, # sementara
-        "status": "ongoing"
-    }
-    cur = mysql.connection.cursor()
-    cur.execute("DELETE FROM tb_cart WHERE id = %s and id_user = %s and status = %s", (req_data.get('product'), req_data.get('id_user'), req_data.get('status')))
-    mysql.connection.commit()
-    cur.close()
-    return redirect(url_for('payment'))
+    if session.get('is_login') == True:
+        req_data = {
+            "product": id,
+            "id_user": session.get('id'), # sementara
+            "status": "ongoing"
+        }
+        cur = mysql.connection.cursor()
+        cur.execute("DELETE FROM tb_cart WHERE id = %s and id_user = %s and status = %s", (req_data.get('product'), req_data.get('id_user'), req_data.get('status')))
+        mysql.connection.commit()
+        cur.close()
+        return redirect(url_for('payment'))
+    else:
+        return redirect(url_for('login'))
 
 
 
 @application.route('/payment-dash')
 def payment():
+    if session.get('is_login') == True:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT *, tb_product.product_name FROM tb_cart JOIN tb_product ON tb_cart.id_product = tb_product.id WHERE tb_cart.id_user = %s AND tb_cart.status = 'ongoing' ", (session.get('id'),))
+        row = cur.fetchall()
 
-    cur = mysql.connection.cursor()
-    cur.execute("SELECT *, tb_product.product_name FROM tb_cart JOIN tb_product ON tb_cart.id_product = tb_product.id WHERE tb_cart.id_user = 1 AND tb_cart.status = 'ongoing' ")
-    row = cur.fetchall()
-
-    data = []
-    for x in row:
-        data.append({
-            "id": x[0],
-            "product_id": x[1],
-            "product_name": x[6],
-            "product_price": x[8],
-            "product_slot": x[9],
-            "user_slot": x[2],
-            'status': x[4]
-        })
-    return render_template('store/payment.html', data=data)
-
+        data = []
+        for x in row:
+            data.append({
+                "id": x[0],
+                "product_id": x[1],
+                "product_name": x[6],
+                "product_price": x[8],
+                "product_slot": x[9],
+                "user_slot": x[2],
+                'status': x[4]
+            })
+        return render_template('store/payment.html', data=data)
+    else:
+        return redirect(url_for('login'))
 
 @application.route('/payment-success/<id>/<id_product>')
 def payment_success(id, id_product):
-    req_data = {
-        "cart_id": id,
-        "product": id_product,
-        "product_slot": 1,
-        "id_user": 1, # sementara
-        "status": "completed"
-    }
-    cur = mysql.connection.cursor()
-    cur.execute('SELECT * FROM tb_product WHERE id = %s', (req_data.get('product')))
-    row = cur.fetchone()
-    post_data = {
-        "id_slot": row[4]
-    }
-    if post_data.get('id_slot') != 0:
-        last_item = post_data.get('id_slot') - req_data.get('product_slot')
-        cur.execute("UPDATE tb_cart SET status = %s WHERE id = %s AND id_user = %s ", (req_data.get('status'), req_data.get('cart_id'), req_data.get('id_user') ))
-        cur.execute('UPDATE tb_product SET id_slot = %s WHERE id = %s', (last_item, req_data.get('product')))
-        mysql.connection.commit()
-        cur.close()
-    return redirect(url_for('home'))
+    if session.get('is_login') == True:
+        req_data = {
+            "cart_id": id,
+            "product": id_product,
+            "product_slot": 1,
+            "id_user": session.get('id'), # sementara
+            "status": "completed"
+        }
+        cur = mysql.connection.cursor()
+        cur.execute('SELECT * FROM tb_product WHERE id = %s', (req_data.get('product')))
+        row = cur.fetchone()
+        post_data = {
+            "id_slot": row[4]
+        }
+        if post_data.get('id_slot') != 0:
+            last_item = post_data.get('id_slot') - req_data.get('product_slot')
+            cur.execute("UPDATE tb_cart SET status = %s WHERE id = %s AND id_user = %s ", (req_data.get('status'), req_data.get('cart_id'), req_data.get('id_user') ))
+            cur.execute('UPDATE tb_product SET id_slot = %s WHERE id = %s', (last_item, req_data.get('product')))
+            mysql.connection.commit()
+            cur.close()
+        return redirect(url_for('home'))
+    else:
+        return redirect(url_for('login'))
+
+@application.route('/completed-cart')
+def completed_cart():
+    if session.get('is_login') == True:
+        cur = mysql.connection.cursor()
+        cur.execute("SELECT *, tb_product.product_name FROM tb_cart JOIN tb_product ON tb_cart.id_product = tb_product.id WHERE tb_cart.id_user = %s AND tb_cart.status = 'completed' ", (session.get('id'),))
+        row = cur.fetchall()
+
+        data = []
+        for x in row:
+            data.append({
+                "id": x[0],
+                "product_id": x[1],
+                "product_name": x[6],
+                "product_price": x[8],
+                "product_slot": x[9],
+                "user_slot": x[2],
+                'status': x[4]
+            })
+        return render_template('store/done.html', data=data)
+    else:
+        return redirect(url_for('login'))
 
 
 if __name__ == "__main__":
